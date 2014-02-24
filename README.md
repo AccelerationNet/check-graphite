@@ -30,3 +30,17 @@ points collected, it then checks the value against supplied thresholds. Threshol
 in the format given in [The Nagios Developer Guidelines](http://nagiosplug.sourceforge.net/developer-guidelines.html#THRESHOLDFORMAT).
 
 NaN values are not taken into account in the average
+
+## Hacking
+
+To setup your machine for hacking on `check-graphite`:
+
+* install ruby1.9.1 or higher
+* install ruby gems
+* clone this repo
+* `gem build check_graphite.gemspec` - make a `.gem` file from the
+  local source
+* `gem install check_graphite --development` - install the newly
+  created .gem, and fetch all dependencies from the internet
+* `gem install bundler`
+* run `rake` to run the test suite
