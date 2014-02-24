@@ -86,6 +86,13 @@ describe CheckGraphite::Command do
       STDOUT.should_receive(:puts).with(/UNKNOWN: INTERNAL ERROR: (RuntimeError: )?no data returned for target/)
       lambda { c.run }.should raise_error SystemExit
     end
+
+    it "should honor --nulls critical" do
+      ARGV = %w{ -H http://your.graphite.host/render -M value.does.not.exist --nulls critical }
+      c = CheckGraphite::Command.new
+      STDOUT.should_receive(:puts).with(/CRITICAL: no data returned for value/)
+      lambda { c.run }.should raise_error SystemExit
+    end
   end
 
   describe "when Graphite returns only NULL values" do
@@ -99,6 +106,13 @@ describe CheckGraphite::Command do
       ARGV = %w{ -H http://your.graphite.host/render -M all.values.null }
       c = CheckGraphite::Command.new
       STDOUT.should_receive(:puts).with(/UNKNOWN: INTERNAL ERROR: (RuntimeError: )?no valid datapoints/)
+      lambda { c.run }.should raise_error SystemExit
+    end
+
+    it "should honor --nulls critical" do
+      ARGV = %w{ -H http://your.graphite.host/render -M all.values.null --nulls critical }
+      c = CheckGraphite::Command.new
+      STDOUT.should_receive(:puts).with(/CRITICAL: no data returned for value/)
       lambda { c.run }.should raise_error SystemExit
     end
   end
@@ -125,6 +139,25 @@ describe CheckGraphite::Command do
       c = CheckGraphite::Command.new
       STDOUT.should_receive(:puts).with(/UNKNOWN: INTERNAL ERROR: (RuntimeError: )?HTTP error code 401/)
       lambda { c.run }.should raise_error SystemExit
+    end
+  end
+
+  describe "null CLI option" do
+
+    it "should default to unknown" do
+      args = %w{ -H host -M metric }
+      c = CheckGraphite::Command.new      
+      c.send(:parse_options, args)
+      expect(c.crit_on_null?).to be_false
+    end
+    %w{critical CRITICAL crit CRIT cRiT}.each do |opt|
+      it "should consider '#{opt}' critcial" do
+        args = %w{ -H host -M metric --nulls}.push(opt)
+        c = CheckGraphite::Command.new
+
+        c.send(:parse_options, args)
+        expect(c.crit_on_null?).to be_true
+      end
     end
   end
 end

@@ -22,6 +22,8 @@ check_graphite accepts the following options:
 * `-w`: warning threshold for the metric
 * `-c`: critical threshold for the metric
 * `-t`: timeout after which the metric should be considered unknown
+* `--nulls`: how to handle null data from graphite, either "unknown"
+  or "critical", defaults to "unknown"
 
 ## How it works
 

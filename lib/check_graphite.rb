@@ -16,12 +16,27 @@ module CheckGraphite
     on "--password PASSWORD", "-P PASSWORD"
     on "--dropfirst N", "-A N", Integer, :default => 0
     on "--droplast N", "-Z N", Integer, :default => 0
+    on "--nulls (unknown|critical)", :default => "unknown"
 
     enable_warning
     enable_critical
     enable_timeout
 
+    def crit_on_null?
+      options.nulls =~ /crit/i
+    end
+    
+    def null_data(msg)
+      if crit_on_null?
+        puts "CRITICAL: no data returned for #{options.name}"
+        exit 2
+      end
+
+      raise msg
+    end
+    
     def check
+      
       uri = URI(URI.encode("#{options.endpoint}?target=#{options.metric}&from=-#{options.from}&format=json"))
       req = Net::HTTP::Get.new(uri.request_uri)
 
@@ -35,7 +50,7 @@ module CheckGraphite
       }
 
       raise "HTTP error code #{res.code}" unless res.code == "200"
-      raise "no data returned for target" if res.body == "[]"
+      null_data("no data returned for target") if res.body == "[]"
 
       datapoints = JSON(res.body).first["datapoints"]
       datapoints = datapoints.slice(
@@ -45,7 +60,7 @@ module CheckGraphite
 
       # Remove NULL values. Return UNKNOWN if there's nothing left.
       datapoints.reject! { |v| v.first.nil? }
-      raise "no valid datapoints" if datapoints.size == 0
+      null_data("no valid datapoints") if datapoints.size == 0
 
       sum = datapoints.reduce(0.0) {|acc, v| acc + v.first }
       value = sum / datapoints.size
